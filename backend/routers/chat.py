@@ -22,7 +22,8 @@ from models.chat import (
     FileChat,
 )
 from models.conversation import Conversation
-from routers.sync import retrieve_file_paths, decode_files_to_wav
+# Opus-dependent imports moved to voice endpoints (lazy loading)
+# from routers.sync import retrieve_file_paths, decode_files_to_wav
 from utils.apps import get_available_app_by_id
 from utils.chat import (
     process_voice_message_segment,
@@ -284,6 +285,15 @@ def get_messages(
 async def create_voice_message_stream(
     files: List[UploadFile] = File(...), uid: str = Depends(auth.get_current_user_uid)
 ):
+    # Lazy import to avoid Opus dependency for text endpoints
+    try:
+        from routers.sync import retrieve_file_paths, decode_files_to_wav
+    except ImportError as e:
+        raise HTTPException(
+            status_code=503,
+            detail='Voice message processing is temporarily unavailable: Opus library not available'
+        )
+    
     # wav
     paths = retrieve_file_paths(files, uid)
     if len(paths) == 0:
@@ -303,6 +313,15 @@ async def create_voice_message_stream(
 
 @router.post("/v2/voice-message/transcribe")
 async def transcribe_voice_message(files: List[UploadFile] = File(...), uid: str = Depends(auth.get_current_user_uid)):
+    # Lazy import to avoid Opus dependency for text endpoints
+    try:
+        from routers.sync import retrieve_file_paths, decode_files_to_wav
+    except ImportError as e:
+        raise HTTPException(
+            status_code=503,
+            detail='Voice transcription is temporarily unavailable: Opus library not available'
+        )
+    
     # Check if files are empty
     if not files or len(files) == 0:
         raise HTTPException(status_code=400, detail='No files provided')
@@ -494,6 +513,15 @@ def clear_chat_messages(
 
 @router.post("/v1/voice-message/transcribe")
 async def transcribe_voice_message(files: List[UploadFile] = File(...), uid: str = Depends(auth.get_current_user_uid)):
+    # Lazy import to avoid Opus dependency for text endpoints
+    try:
+        from routers.sync import retrieve_file_paths, decode_files_to_wav
+    except ImportError as e:
+        raise HTTPException(
+            status_code=503,
+            detail='Voice transcription is temporarily unavailable: Opus library not available'
+        )
+    
     # Check if files are empty
     if not files or len(files) == 0:
         raise HTTPException(status_code=400, detail='No files provided')

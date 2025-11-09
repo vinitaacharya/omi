@@ -537,45 +537,52 @@ class ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin {
                               // const SizedBox(width: 8),
                               !shouldShowSendButton(provider)
                                   ? const SizedBox.shrink()
-                                  : GestureDetector(
-                                      onTap: provider.sendingMessage || provider.isUploadingFiles
-                                          ? null
-                                          : () {
-                                              HapticFeedback.mediumImpact(); // Changed from lightImpact to mediumImpact
-                                              String message = textController.text;
-                                              if (message.isEmpty) return;
-                                              if (connectivityProvider.isConnected) {
-                                                _sendMessageUtil(message);
-                                              } else {
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  const SnackBar(
-                                                    content:
-                                                        Text('Please check your internet connection and try again'),
-                                                    duration: Duration(seconds: 2),
-                                                  ),
-                                                );
-                                              }
-                                            },
-                                      child: Container(
-                                        height: 32,
-                                        width: 32,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(22),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(0.1),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 2),
+                                  : ValueListenableBuilder<TextEditingValue>(
+                                      valueListenable: textController,
+                                      builder: (context, value, child) {
+                                        // Check if input is empty or contains only whitespace
+                                        final bool isInputValid = value.text.trim().isNotEmpty;
+                                        final bool isEnabled = isInputValid &&
+                                            !provider.sendingMessage &&
+                                            !provider.isUploadingFiles &&
+                                            connectivityProvider.isConnected;
+
+                                        return GestureDetector(
+                                          onTap: isEnabled
+                                              ? () {
+                                                  HapticFeedback.mediumImpact();
+                                                  String message = textController.text.trim();
+                                                  if (message.isEmpty) return;
+                                                  _sendMessageUtil(message);
+                                                }
+                                              : null,
+                                          child: AnimatedContainer(
+                                            duration: const Duration(milliseconds: 200),
+                                            height: 32,
+                                            width: 32,
+                                            decoration: BoxDecoration(
+                                              color: isEnabled ? Colors.white : Colors.white.withOpacity(0.5),
+                                              borderRadius: BorderRadius.circular(22),
+                                              boxShadow: isEnabled
+                                                  ? [
+                                                      BoxShadow(
+                                                        color: Colors.black.withOpacity(0.1),
+                                                        blurRadius: 8,
+                                                        offset: const Offset(0, 2),
+                                                      ),
+                                                    ]
+                                                  : [],
                                             ),
-                                          ],
-                                        ),
-                                        child: const Icon(
-                                          FontAwesomeIcons.arrowUp,
-                                          color: Color(0xFF35343B),
-                                          size: 18,
-                                        ),
-                                      ),
+                                            child: Icon(
+                                              FontAwesomeIcons.arrowUp,
+                                              color: isEnabled
+                                                  ? const Color(0xFF35343B)
+                                                  : const Color(0xFF35343B).withOpacity(0.5),
+                                              size: 18,
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     ),
                             ],
                           ),
