@@ -8,7 +8,7 @@ print("Loaded BASE_API_URL:", os.getenv("BASE_API_URL"))
 from modal import Image, App, asgi_app, Secret
 from routers import (
     workflow,
-    # chat,  # Temporarily disabled - requires Opus library
+    chat,  # Re-enabled: Opus dependency made conditional (lazy imports in voice endpoints only)
     firmware,
     plugins,
     # transcribe,  # Temporarily disabled - requires Opus library
@@ -44,7 +44,20 @@ app = FastAPI()
 app.include_router(conversations.router)
 app.include_router(action_items.router)
 app.include_router(memories.router)
-# app.include_router(chat.router)  # Temporarily disabled - requires Opus
+
+# Re-enabled: Opus dependency made conditional (lazy imports in voice endpoints only)
+try:
+    app.include_router(chat.router)
+    print(f"✓ Chat router registered successfully with {len(chat.router.routes)} routes")
+    for route in chat.router.routes:
+        if hasattr(route, 'path'):
+            methods = list(route.methods) if hasattr(route, 'methods') and route.methods else ['*']
+            print(f"  Registered: {', '.join(methods)} {route.path}")
+except Exception as e:
+    print(f"✗ ERROR: Failed to register chat router: {e}")
+    import traceback
+    traceback.print_exc()
+
 app.include_router(plugins.router)
 app.include_router(speech_profile.router)
 # app.include_router(screenpipe.router)
